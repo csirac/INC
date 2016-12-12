@@ -4,8 +4,8 @@ Program to compute various clustering coefficients
 
 'main.cpp' computes a few different clustering coefficients and prints to command line
 
-To compile, use the include Makefile (requires igraph library)
+To compile, use the included Makefile (requires the Igraph C library)
 
-'*.el' sample graphs which can be used for testing
+'*.el' sample graphs in edge list format which can be used for testing
 
 Usage: main 'input graph filename'
