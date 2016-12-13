@@ -234,8 +234,23 @@ public:
 
   }
 
+  /**
+   * write the graph in graphml format to the standard output
+   */
   void print_gml() {
     igraph_write_graph_graphml( &G, stdout, 1);
+  }
+
+  /**
+   * write the graph in graphml format to a file with name filename
+   */
+  void print_gml(string filename_str) {
+     // Need to use C
+     const char* filename = filename_str.c_str();
+     // open a C stream (igraph needs in C)
+     FILE* filestream = fopen(filename, "w");
+
+     igraph_write_graph_graphml( &G, filestream, 1);
   }
 
   //does an edge exist from p to q?

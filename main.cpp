@@ -10,7 +10,14 @@ int main(int argc, char** argv) {
   string fname( argv[1] );
 
   graph G( fname );
-  G.print_gml();
+
+  if (argc > 2) {
+     G.print_gml(argv[2]);
+  }
+  else {
+     G.print_gml();
+  }
+
 
   cout << "GCC: " << G.compute_GCC() << endl;
   cout << "ALCC: " << G.compute_ALCC() << endl;
