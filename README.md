@@ -23,6 +23,8 @@ ECC
 	     including . itself.
 
 	     Then c(u,v) is averaged over all pairs.
+
+	     More discussion is provided in "ref/summary_ecc0.pdf".
 	1 -- proportional to the number of edges in the graph (old)
 	2 -- Slight modification of the definition in 0
 	3 -- Eq. (1) averaged over only extant edges in the graph
