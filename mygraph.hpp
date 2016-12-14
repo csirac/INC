@@ -13,15 +13,15 @@ using namespace std;
 class graph {
   igraph_t G;
 
-
-  //  void enable_attributes() {
-  //    igraph_i_set_attribute_table(  &igraph_cattribute_table )
-
-  //  }
-
   void read_edge_list_file( string fname ) {
     cout << "Reading graph from edge list '" << fname << "'..." << endl;
     ifstream ifile( fname.c_str() );
+    if (!ifile.good()) {
+      cout << "Could not open file." << endl;
+      igraph_empty( &G, 1, false );  //for now, undirected
+      return;
+    }
+
     //vertex ids are from 0 to (n-1)
     bool is_weighted, is_directed;
     int n;
@@ -64,7 +64,7 @@ class graph {
 
 	  //create graph
 	  igraph_empty( &G, n, false );  //for now, undirected
-
+	  ++n_lines;
 	} else {
 	  iss >> nparent;
 	  iss >> nchild;
@@ -82,9 +82,9 @@ class graph {
 
 	  igraph_vector_push_back( &edges_to_add, nparent );
 	  igraph_vector_push_back( &edges_to_add, nchild );
+	  ++n_lines;
 	}
 
-	++n_lines;
       }
 
     }
@@ -234,6 +234,11 @@ public:
 
   }
 
+  void add_numeric_global_attribute( string attr_name, double value ) {
+    SETGAN( &G, attr_name.c_str(), value );
+
+  }
+
   /**
    * write the graph in graphml format to the standard output
    */
@@ -251,6 +256,8 @@ public:
      FILE* filestream = fopen(filename, "w");
 
      igraph_write_graph_graphml( &G, filestream, 1);
+
+     fclose( filestream );
   }
 
   //does an edge exist from p to q?
@@ -304,7 +311,7 @@ public:
     return res;
   }
 
-  double compute_local_ECC( int p, int q, char type = '0' ) {
+  double compute_local_ECC( int p, int q, unsigned type = 0 ) {
     vector< int > nei_p;
     vector< int > nei_q;
 
@@ -317,7 +324,7 @@ public:
     bool p_conn_q;
     int n = igraph_vcount(&G);
     switch (type) {
-    case '0':
+    case 0:
       get_all_neighbors( p, nei_p );
       get_all_neighbors( q, nei_q );
 
@@ -329,7 +336,7 @@ public:
 
       return static_cast<double> ( pinq.size() ) / static_cast< double >( punq.size() );
       break;
-    case '1':
+    case 1:
       //for each w, we compute a clustering score
       //based upon how much of a triangle
       //p,q,w form
@@ -384,7 +391,7 @@ public:
       return res;
 
       break;
-    case '2':
+    case 2:
       get_all_neighbors( p, nei_p );
       get_all_neighbors( q, nei_q );
 
@@ -405,17 +412,35 @@ public:
   }
 
   //"Edge clustering coefficient"
-  double compute_ECC( char type = '0') {
+  double compute_ECC( unsigned type = 0) {
     double res = 0.0;
     int n = igraph_vcount( &G );
-    for (int i = 0; i < n; ++i) {
-      for (int j = i + 1; j < n; ++j) {
-	res += compute_local_ECC(i,j,type);
+    int m = igraph_ecount( &G );
+    switch( type ) {
+    case 3:
+      if (m == 0)
+	return 0.0;
+
+      for (int i = 0; i < n; ++i) {
+	for (int j = i + 1; j < n; ++j) {
+	  if (is_edge(i,j))
+	    res += compute_local_ECC(i,j, 0);
+	}
       }
+
+      res = res / static_cast<double>( m );
+
+      break;
+    default:
+      for (int i = 0; i < n; ++i) {
+	for (int j = i + 1; j < n; ++j) {
+	  res += compute_local_ECC(i,j,type);
+	}
+      }
+
+      res = res / ( n * (n - 1) ) * 2;
+      break;
     }
-
-    res = res / ( n * (n - 1) ) * 2;
-
     return res;
   }
 
