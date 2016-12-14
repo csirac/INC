@@ -26,6 +26,6 @@ ECC
 
 	     More discussion is provided in "ref/summary_ecc0.pdf".
 	1 -- proportional to the number of edges in the graph (old)
-	2 -- Slight modification of the definition in 0
+	2 -- Slight modification of the definition in ECC0
 	3 -- Eq. (1) averaged over only extant edges in the graph
-	4 -- 3 / ncc^2, where ncc is the number  of connected components of the graph.
+	4 -- ECC3 / ncc^2, where ncc is the number  of connected components of the graph.
