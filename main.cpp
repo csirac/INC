@@ -21,10 +21,11 @@ int main(int argc, char** argv) {
   cout << "ALCC: " << cc << endl;
 
   string sECC = "ECC";
-  for (unsigned type = 0; type <= 3; ++type) {
+  for (unsigned type = 0; type <= 4; ++type) {
     cc = G.compute_ECC( type );
     string name = to_string( type );
     name = sECC + name;
+    G.add_numeric_global_attribute( name, cc );
     cout << name << ": " << cc << endl;
   }
 
