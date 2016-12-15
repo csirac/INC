@@ -254,7 +254,27 @@ public:
 					false,    //directed
 					false );  //no self loops 
 	 } else {
-	    read_edge_list_file( fname );
+	    if (fname.substr(0,2) == "BA") {
+	       int n;
+	       int m;
+	       size_t pos_colon = fname.find_first_of( ':' );
+	       string s_n = fname.substr(2, (pos_colon - 2));
+	       string s_m = fname.substr( pos_colon + 1 );
+	       m = stoi( s_m );
+	       n = stoi( s_n );
+	       igraph_barabasi_game( &G, 
+				     n, 
+				     1,
+				     m,
+				     NULL,
+				     true,
+				     1,
+				     false, //directed
+				     IGRAPH_BARABASI_PSUMTREE,
+				     NULL);  
+	    } else {
+	       read_edge_list_file( fname );
+	    }
 	 }
       }
 
