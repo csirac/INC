@@ -11,6 +11,11 @@ int main(int argc, char** argv) {
 
   graph G( fname );
 
+  cout << "n: " << G.n() << " m: " << G.m() << endl;
+  //  int m_clique = static_cast<int>( G.n() * ( G.n() - 1 ) / 2.0 ); // n choose 2
+  //  cout << "m / m_clique: " << static_cast<double>( G.m() ) / m_clique << endl;
+
+
   double cc;
   cc = G.compute_GCC();
   G.add_numeric_global_attribute( "GCC", cc );

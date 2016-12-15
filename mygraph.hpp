@@ -233,10 +233,17 @@ public:
 	 string s_p = fname.substr( pos_colon + 1 );
 	 p = stod( s_p );
 	 n = stoi( s_n );
-	 igraph_erdos_renyi_game( &G, IGRAPH_ERDOS_RENYI_GNP,
-				  n, p,
-				  false,    //directed
-				  false );  //no self loops 
+	 if ( p <= 1 ) {
+	    igraph_erdos_renyi_game( &G, IGRAPH_ERDOS_RENYI_GNP,
+				     n, p,
+				     false,    //directed
+				     false );  //no self loops 
+	 } else {
+	    igraph_erdos_renyi_game( &G, IGRAPH_ERDOS_RENYI_GNM,
+				     n, p,
+				     false,    //directed
+				     false );  //no self loops 
+	 }
       } else {
 	 if (fname.substr(0, 2) == "WS") {
 	    int n;
@@ -246,7 +253,7 @@ public:
 	    string s_p = fname.substr( pos_colon + 1 );
 	    p = stod( s_p );
 	    n = stoi( s_n );
-	    int nei = 3;
+	    int nei = 6;
 	    igraph_watts_strogatz_game( &G, 1,
 					n, 
 					nei,
@@ -293,6 +300,10 @@ public:
 
    int n() {
       return igraph_vcount(&G);
+   }
+
+   int m() {
+      return igraph_ecount(&G);
    }
 
    /**
@@ -529,7 +540,7 @@ public:
       int n = igraph_vcount( &G );
       int m = igraph_ecount( &G );
       int p,q;
-
+      int m_clique;
       //for ECC4
       vector< graph > ccs; //connected components
       vector< component_map_type > map;
@@ -554,6 +565,10 @@ public:
 	 if (m > 0)
 	    res = res / static_cast<double>( m );
 
+	 break;
+      case 1:
+	 m_clique = static_cast<int>( this->n() * ( this->n() - 1 ) / 2.0 ); // n choose 2
+	 return static_cast<double>( this->m() ) / m_clique;
 	 break;
       default:
 	 for (int i = 0; i < n; ++i) {
