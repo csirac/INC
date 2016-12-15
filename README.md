@@ -27,9 +27,10 @@ ECC
 	     Then c(u,v) is averaged over all pairs.
 
 	     More discussion is provided in "ref/summary_ecc0.pdf".
-	1 -- proportional to the number of edges in the graph (old)
+	1 -- m / (n choose 2), where n = number of nodes, m = number of edges
 	2 -- Slight modification of the definition in ECC0
 	3 -- Eq. (1) averaged over only extant edges in the graph
 	4 -- ECC3 / ncc^2, where ncc is the number  of connected components of the graph.
 	5 -- Modification of eq (1), s.t. {u,v} is ignored and 0.0 is returned
 	     if edge (u,v) does not exist. So no partial triangles are counted.
+	     Only averaged over extant edges.
