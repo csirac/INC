@@ -31,6 +31,13 @@ ECC
 	2 -- Slight modification of the definition in ECC0
 	3 -- Eq. (1) averaged over only extant edges in the graph
 	4 -- ECC3 / ncc^2, where ncc is the number  of connected components of the graph.
-	5 -- Modification of eq (1), s.t. {u,v} is ignored and 0.0 is returned
-	     if edge (u,v) does not exist. So no partial triangles are counted.
-	     Only averaged over extant edges.
+	5 -- Modification of eq (1) to use N'(.), which is the 
+	     the set N(.) - { u, v }.
+	     If N(u) \cup N(v) = { u, v }, c(u,v) is defined to be 0.0.
+	     
+	     C(G) = average of c(u,v) over extant edges (u,v).
+
+	     So no partial triangles are counted, only whole ones.
+	     Also {u,v} doesn't skew the metric anymore.
+
+
