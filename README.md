@@ -41,3 +41,7 @@ ECC
 	     Also {u,v} doesn't skew the metric anymore.
 
 
+Generating a graphviz image of graph:
+   The DisplayGraph.py script allows you to generate a graphviz image of a graph. It should be run like 
+   "python DisplayGraph.py mygraph.graphml mygraph.png" where mygraph.graphml is a graphml file containing
+   the graph to be displayed, and mygraph.png is the name of the desired output image.
