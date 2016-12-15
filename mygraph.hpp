@@ -480,6 +480,25 @@ public:
 	 }
 	
 	 break;
+      case 5:
+	 get_all_neighbors( p, nei_p );
+	 get_all_neighbors( q, nei_q );
+
+	 vector_union( nei_p, nei_q, punq );
+	 vector_intersection( nei_p, nei_q, pinq );
+
+	 if (is_edge(p,q)) {
+	    if ( punq.size() == 2 ) {
+	       return 0.0;
+	    }
+
+	    //punq contains both p and q, so subtract 2.
+	    return static_cast<double> ( pinq.size() ) / static_cast< double >( punq.size() - 2 );
+	 }
+	 else {
+	    return 0.0;
+	 }
+	 break;
       }
    }
   
@@ -569,6 +588,16 @@ public:
       case 1:
 	 m_clique = static_cast<int>( this->n() * ( this->n() - 1 ) / 2.0 ); // n choose 2
 	 return static_cast<double>( this->m() ) / m_clique;
+	 break;
+      case 5:
+	 //no partial triangles
+	 for (int k = 0; k < m; ++k) {
+	    igraph_edge( &G, k, &p, &q );
+	    res += compute_local_ECC(p,q, 5);
+	 }
+
+	 if (m > 0)
+	    res = res / static_cast<double>( m );
 	 break;
       default:
 	 for (int i = 0; i < n; ++i) {

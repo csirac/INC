@@ -2,5 +2,6 @@ Edge Clustering Coefficient
 To investigate:
 1. Fixed n, fixed m
    - what graphs maximize ECC?
-2. 
+2. Compare vs. neighborhood width
+3. 
 

@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   cout << "ALCC: " << cc << endl;
 
   string sECC = "ECC";
-  for (unsigned type = 0; type <= 4; ++type) {
+  for (unsigned type = 0; type <= 5; ++type) {
     cc = G.compute_ECC( type );
     string name = to_string( type );
     name = sECC + name;
