@@ -244,6 +244,7 @@ public:
 				     false,    //directed
 				     false );  //no self loops 
 	 }
+         add_string_global_attribute("type", "ER");
       } else {
 	 if (fname.substr(0, 2) == "WS") {
 	    int n;
@@ -260,6 +261,7 @@ public:
 					p,
 					false,    //directed
 					false );  //no self loops 
+            add_string_global_attribute("type", "WS");
 	 } else {
 	    if (fname.substr(0,2) == "BA") {
 	       int n;
@@ -279,6 +281,7 @@ public:
 				     false, //directed
 				     IGRAPH_BARABASI_PSUMTREE,
 				     NULL);  
+               add_string_global_attribute("type", "BA");
 	    } else {
 	       read_edge_list_file( fname );
 	    }
@@ -295,6 +298,14 @@ public:
 
    void add_numeric_global_attribute( string attr_name, double value ) {
       SETGAN( &G, attr_name.c_str(), value );
+
+   }
+
+   /**
+    * Add a graph attribute that is a string (for example, graph type)
+    */
+   void add_string_global_attribute( string attr_name, string value ) {
+      SETGAS( &G, attr_name.c_str(), value.c_str() );
 
    }
 
