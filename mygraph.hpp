@@ -338,9 +338,39 @@ public:
       fclose( filestream );
    }
 
+   double dist( int p, int q ) { //unweighted for now
+      igraph_matrix_t res;
+      igraph_matrix_init( &res, 1, 1 );
+      igraph_shortest_paths_dijkstra( &G,
+				      &res,
+				      igraph_vss_1( p ),
+				      igraph_vss_1( q ),
+				      NULL,
+				      IGRAPH_OUT );
+      double dval = MATRIX( res, 0, 0 );
+      igraph_matrix_destroy( &res );
+      return dval;
+   }
+
    //add edge from p to q
    void add_edge( int p, int q) {
       igraph_add_edge( &G, p, q );
+   }
+
+   void remove_edge( int p, int q) {
+      int eid;
+      igraph_get_eid( &G,
+		      &eid,
+		      p,
+		      q,
+		      true, //directed
+		      false //assign -1 to eid if no edge
+		      );
+
+      if (eid == -1) //this edge doesn't exist
+	 return;
+
+      igraph_delete_edges( &G, igraph_ess_1( eid ) );
    }
 
    //does an edge exist from p to q?
@@ -368,6 +398,27 @@ public:
       os << endl;
    }
 
+   void get_neighborhood( int vid, vector< int >& neis, int order ) {
+      //int igraph_neighborhood(const igraph_t *graph, igraph_vector_ptr_t *res,igraph_vs_t vids, igraph_integer_t order,igraph_neimode_t mode);
+      neis.clear();
+      igraph_vector_ptr_t res;
+      igraph_vector_ptr_init( &res, 0 );
+      igraph_neighborhood( &G, &res, igraph_vss_1( vid ), order, 
+			   IGRAPH_OUT );
+      igraph_vector_t* v;
+      v = (igraph_vector_t*) igraph_vector_ptr_e( &res, 0 );
+      igraph_vector_sort( v );
+      for (int j = 0; j < igraph_vector_size( v ); ++j) {
+	 int nei = igraph_vector_e( v, j );
+	 if (nei != vid) {
+	    neis.push_back( nei );
+	 }
+      }
+
+      igraph_vector_ptr_destroy_all( &res );
+      
+   }
+
    void get_all_neighbors( int vid, vector< int >& neis ) {
       neis.clear();
       igraph_vector_t ineis;
@@ -392,6 +443,53 @@ public:
       }
     
       return res;
+   }
+
+   //HCC -- "heterogeneous clustering coefficient"
+   double compute_local_HCC( int p, int q, int l, bool length = false ) {
+      vector< int > nei_p;
+      vector< int > nei_q;
+
+      vector< int > punq;
+      vector< int > pinq;
+      double dp;
+      double dq;
+      double numerator = 0.0;
+      if (is_edge(p,q)) {
+	 //delete (p,q)
+	 remove_edge( p, q );
+
+	 get_neighborhood( p, nei_p, l );
+	 get_neighborhood( q, nei_q, l );
+
+	 vector_minus( nei_p, q );
+	 vector_minus( nei_q, p );
+
+	 vector_union( nei_p, nei_q, punq );
+	 vector_intersection( nei_p, nei_q, pinq );
+
+	 if ( punq.size() == 0 ) {
+	    return 0.0;
+	 }
+
+	 add_edge(p,q);
+
+	 if (length) {
+	    for (int i = 0; i < pinq.size(); ++i) {
+	       dp = dist( p, pinq[i] );
+	       dq = dist (q, pinq[i] );
+	       numerator += (1.0)/ (dp + dq - 1.0);
+	    }
+	 } else {
+	    numerator = static_cast<double> ( pinq.size() );
+	 }
+
+	 return numerator / static_cast< double >( punq.size() );
+      }
+      else {
+	 return 0.0;
+      }
+
    }
 
    double compute_local_ECC( int p, int q, unsigned type = 0 ) {
@@ -562,6 +660,34 @@ public:
 	 //	 cout << "result[which_cc].n " << result[which_cc].n() << endl;
 	 result[which_cc].add_edge( newp, newq );
       }
+   }
+
+   double compute_HCC( int order, bool b_length = false ) {
+      int m = this->m();
+      double res = 0.0;
+      int p,q;
+
+      graph G_copy( *this );
+      for (int k = 0; k < m; ++k) {
+	 igraph_edge( &G, k, &p, &q );
+	 //	 cout << "(" << p << "," << q << "): " << G_copy.compute_local_HCC(p,q, order);
+	 res += G_copy.compute_local_HCC(p,q, order, b_length);
+      }
+
+      if (m > 0)
+	 res = res / static_cast<double>( m );
+
+      return res;
+   }
+
+   void vector_minus( vector< int >& vec, int p ) {
+      vector< int > res;
+      for (unsigned i = 0; i < vec.size(); ++i) {
+	 if (vec[i] != p)
+	    res.push_back ( vec[i] );
+      }
+
+      vec.assign( res.begin(), res.end() );
    }
 
    //"Edge clustering coefficient"

@@ -25,18 +25,26 @@ int main(int argc, char** argv) {
   G.add_numeric_global_attribute( "ALCC", cc );
   cout << "ALCC: " << cc << endl;
 
-  string sECC = "ECC";
-  for (unsigned type = 0; type <= 5; ++type) {
-    cc = G.compute_ECC( type );
-    string name = to_string( type );
-    name = sECC + name;
-    G.add_numeric_global_attribute( name, cc );
-    cout << name << ": " << cc << endl;
-  }
+  // string sECC = "ECC";
+  // for (unsigned type = 0; type <= 5; ++type) {
+  //   cc = G.compute_ECC( type );
+  //   string name = to_string( type );
+  //   name = sECC + name;
+  //   G.add_numeric_global_attribute( name, cc );
+  //   cout << name << ": " << cc << endl;
+  // }
 
   if (argc > 2) {
      G.print_gml(argv[2]);
   }
+
+  //  cout << "HCC(0,1): " << G.compute_local_HCC(0,1,2) << endl;
+  cout << "HCC(1): " << G.compute_HCC(1, false) << endl;
+  cout << "HCC(1W): " << G.compute_HCC(1, true) << endl;
+  cout << "HCC(2): " << G.compute_HCC(2, false) << endl;
+  cout << "HCC(2W): " << G.compute_HCC(2, true) << endl;
+  cout << "HCC(3): " << G.compute_HCC(3, false) << endl;
+  cout << "HCC(3W): " << G.compute_HCC(3, true) << endl;
 
   return 0;
 }
