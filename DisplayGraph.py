@@ -53,7 +53,7 @@ def writeText(image_filename, text):
    image = Image.open(image_filename)
 
    # get the font we'll use
-   font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-B.ttf", 16)
+   font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-B.ttf", 10)
 
    # something we need for this library ...
    draw = ImageDraw.Draw(image)
@@ -63,8 +63,8 @@ def writeText(image_filename, text):
    # first row is space from top 10, space between is 20
    row = 10
    for i in text:
-      draw.text((10, row), i, (0, 0, 0), font=font)
-      row = row + 20
+      draw.text((10, row), i, (0, 0, 0, 100), font=font)
+      row = row + 10
 
    image.save(image_filename)
 #END
@@ -87,13 +87,15 @@ if __name__ == "__main__":
    # make an agraph graph to print graphviz
    agraph = makeAGraph(graph)
    # get the right layout and draw
-   agraph.layout("fdp")
+   agraph.layout("circo")
    agraph.draw(output_file)
 
    # attributes of the graph we will want printed on the image
    attributes = ("type", "GCC", "ALCC", "ECC0", "ECC1","ECC2","ECC3","ECC4", "ECC5")
    # the text we wil print, with info about the graph
-   attribute_text = getAttributeText(graph, attributes)
+   attribute_text = ["N: " + str(nx.number_of_nodes(graph)),
+                     "M: " + str(nx.number_of_edges(graph))]
+   attribute_text.extend(getAttributeText(graph, attributes))
 
    # need to re-open image and write text
    writeText(output_file, attribute_text)
