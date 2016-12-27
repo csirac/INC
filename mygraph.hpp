@@ -19,6 +19,9 @@ struct component_map_type {
 class graph {
    igraph_t G;
 
+  igraph_matrix_t dmat;
+  bool d_comp; //whether dmat has been computed
+  
    void read_edge_list_file( string fname ) {
       cout << "Reading graph from edge list '" << fname << "'..." << endl;
       ifstream ifile( fname.c_str() );
@@ -216,15 +219,21 @@ public:
    //constructors
    //copy constructor
    graph( const graph& H ) {
-      //need to make a "deep" copy
-      igraph_copy( &G, &(H.G) );
+     d_comp = false;
+     igraph_matrix_init( &dmat, 0, 0 );
+     //need to make a "deep" copy
+     igraph_copy( &G, &(H.G) );
    }
 
    graph( unsigned n ) {
-      igraph_empty( &G, n, false ); //for now, undirected
+     d_comp = false;
+     igraph_matrix_init( &dmat, 0, 0 );
+     igraph_empty( &G, n, false ); //for now, undirected
    }
 
    graph( string fname ) {
+     d_comp = false;
+     igraph_matrix_init( &dmat, 0, 0 );
       if (fname.substr(0, 2) == "ER") {
 	 int n;
 	 double p;
@@ -294,6 +303,7 @@ public:
    //make sure we free the memory allocated for G
    ~graph() {
       igraph_destroy( &G );
+      igraph_matrix_destroy( &dmat );
    }
 
    void add_numeric_global_attribute( string attr_name, double value ) {
@@ -339,19 +349,19 @@ public:
    }
 
    double dist( int p, int q ) { //unweighted for now
-      igraph_matrix_t res;
-      igraph_matrix_init( &res, 1, 1 );
-      igraph_shortest_paths_dijkstra( &G,
-				      &res,
-				      igraph_vss_1( p ),
-				      igraph_vss_1( q ),
-				      NULL,
-				      IGRAPH_OUT );
-      double dval = MATRIX( res, 0, 0 );
-      igraph_matrix_destroy( &res );
-      return dval;
-   }
+     if (!d_comp) {
+       igraph_shortest_paths_dijkstra( &G,
+				       &dmat,
+				       igraph_vss_all(),
+				       igraph_vss_all(),
+				       NULL,
+				       IGRAPH_OUT );
+       d_comp = true;
+     }
 
+     return MATRIX( dmat, p, q );
+   }
+  
    //add edge from p to q
    void add_edge( int p, int q) {
       igraph_add_edge( &G, p, q );
@@ -372,6 +382,36 @@ public:
 
       igraph_delete_edges( &G, igraph_ess_1( eid ) );
    }
+
+   void remove_vertex( int p ) {
+     igraph_delete_vertices( &G, igraph_vss_1( p ) );
+   }
+
+  //preserves node ids
+  void remove_vertex_star( int p, vector< int >& nei ) {
+     //int igraph_incident(const igraph_t *graph, igraph_vector_t *eids,
+     //     igraph_integer_t pnode, igraph_neimode_t mode);
+    get_all_neighbors( p, nei );
+    
+     igraph_vector_t eids;
+     igraph_vector_init( &eids, 0 );
+     igraph_incident( &G, &eids, p, IGRAPH_ALL );
+		      
+     igraph_delete_edges( &G, igraph_ess_vector( &eids ) );
+     igraph_vector_destroy( &eids );
+   }
+
+  void add_vertex_star( int p, vector< int >& nei ) {
+    igraph_vector_t edges;
+    igraph_vector_init( &edges, 0 );
+    for (unsigned i = 0; i < nei.size(); ++i) {
+      igraph_vector_push_back( &edges, p );
+      igraph_vector_push_back( &edges, nei[i] );
+    }
+
+    igraph_add_edges( &G, &edges, 0 );
+    igraph_vector_destroy ( &edges );
+  }
 
    //does an edge exist from p to q?
    bool is_edge( int p, int q ) {
@@ -447,40 +487,61 @@ public:
 
    //HCC -- "heterogeneous clustering coefficient"
    double compute_local_HCC( int p, int q, int l, bool length = false ) {
-      vector< int > nei_p;
-      vector< int > nei_q;
-
+     vector< int > nei_p;
+     vector< int > neigh_p;
+     vector< int > nei_q;
+     vector< int > neigh_q;
+      
       vector< int > punq;
       vector< int > pinq;
+      vector< double > pdist;
+      vector< double > qdist;
+      
       double dp;
       double dq;
       double numerator = 0.0;
+
       if (is_edge(p,q)) {
-	 //delete (p,q)
-	 remove_edge( p, q );
+	remove_vertex_star( q, neigh_q );
+	//	get_all_neighbors( p, nei_p );
+	get_neighborhood( p, nei_p, l );
+	add_vertex_star( q, neigh_q );
 
-	 get_neighborhood( p, nei_p, l );
-	 get_neighborhood( q, nei_q, l );
+	remove_vertex_star( p, neigh_p );
+	//get_all_neighbors( q, nei_q );
+	get_neighborhood( q, nei_q, l );
+	add_vertex_star( p, neigh_p );
 
-	 vector_minus( nei_p, q );
-	 vector_minus( nei_q, p );
+		
+	vector_union( nei_p, nei_q, punq );
+	vector_intersection( nei_p, nei_q, pinq );
 
-	 vector_union( nei_p, nei_q, punq );
-	 vector_intersection( nei_p, nei_q, pinq );
+	if ( pinq.size() == 0 || punq.size() == 0 ) {
+	  return 0.0;
+	}
 
-	 if ( punq.size() == 0 ) {
-	    return 0.0;
-	 }
+	if (length) {
+	  remove_vertex_star( q, neigh_q );
+	  d_comp = false;
+	  for (int i = 0; i < pinq.size(); ++i) {
+	    dp = dist( p, pinq[i] );
+	    pdist.push_back( dp );
+	  }
+	  add_vertex_star(q, neigh_q );
+	  
+	  d_comp = false;
+	  remove_vertex_star( p, neigh_p );
+	  for (int i = 0; i < pinq.size(); ++i) {
+	    dq = dist( q, pinq[i] );
+	    qdist.push_back( dq );
+	  }
+	  add_vertex_star(p, neigh_p );
 
-	 add_edge(p,q);
+	  for (int i = 0; i < pinq.size(); ++i) {
+	    numerator += (1.0)/ (pdist[i] + qdist[i] - 1.0);
+	  }
 
-	 if (length) {
-	    for (int i = 0; i < pinq.size(); ++i) {
-	       dp = dist( p, pinq[i] );
-	       dq = dist (q, pinq[i] );
-	       numerator += (1.0)/ (dp + dq - 1.0);
-	    }
-	 } else {
+	} else {
 	    numerator = static_cast<double> ( pinq.size() );
 	 }
 
@@ -669,6 +730,7 @@ public:
 
       graph G_copy( *this );
       for (int k = 0; k < m; ++k) {
+	cout << "\r" << k << "                "; 
 	 igraph_edge( &G, k, &p, &q );
 	 //	 cout << "(" << p << "," << q << "): " << G_copy.compute_local_HCC(p,q, order);
 	 res += G_copy.compute_local_HCC(p,q, order, b_length);

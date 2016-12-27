@@ -5,3 +5,18 @@ To investigate:
 2. Compare vs. neighborhood width
 3. 
 
+--
+
+. Maybe I should normalize by the number of edges,
+  instead of the number of nodes.
+  
+  Actually, I think the right normalization is
+  the number of paths
+
+To-do:
+1. Finish the version that normalizes by
+   vertices, and is computed for all
+   vertices.
+2. Try the version that normalizes by the
+   number of paths.
+
