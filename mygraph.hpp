@@ -468,6 +468,17 @@ public:
       igraph_vector_destroy( &ineis );
    }
 
+   int get_degree( int vid ) {
+      igraph_vector_t res;
+      igraph_vector_init( &res, 0 );
+      igraph_degree( &G, &res, igraph_vss_1( vid ),
+		     IGRAPH_ALL,
+		     false );
+      int ires = VECTOR( res )[ 0 ];
+      igraph_vector_destroy( &res );
+      return ires;
+   }
+
    double compute_ALCC(bool deg12 = true) {
       double res;
 
@@ -486,7 +497,7 @@ public:
    }
 
    //HCC -- "heterogeneous clustering coefficient"
-   double compute_local_HCC( int p, int q, int l, bool length = false ) {
+   double compute_local_HCC( int p, int q, int l, bool length = false, bool rad_dom = false ) {
      vector< int > nei_p;
      vector< int > neigh_p;
      vector< int > nei_q;
@@ -501,23 +512,34 @@ public:
       double dq;
       double numerator = 0.0;
 
-      if (is_edge(p,q)) {
-	remove_vertex_star( q, neigh_q );
-	//	get_all_neighbors( p, nei_p );
-	get_neighborhood( p, nei_p, l );
-	add_vertex_star( q, neigh_q );
+      int n = this->n();
 
-	remove_vertex_star( p, neigh_p );
-	//get_all_neighbors( q, nei_q );
-	get_neighborhood( q, nei_q, l );
-	add_vertex_star( p, neigh_p );
+      if (is_edge(p,q)) {
+	//	get_all_neighbors( p, nei_p );
+	if (l != -1) {
+	   remove_vertex_star( q, neigh_q );
+	   get_neighborhood( p, nei_p, l );
+	   add_vertex_star( q, neigh_q );
+
+	   remove_vertex_star( p, neigh_p );
+	   //get_all_neighbors( q, nei_q );
+	   get_neighborhood( q, nei_q, l );
+	   add_vertex_star( p, neigh_p );
 
 		
-	vector_union( nei_p, nei_q, punq );
-	vector_intersection( nei_p, nei_q, pinq );
+	   vector_union( nei_p, nei_q, punq );
+	   vector_intersection( nei_p, nei_q, pinq );
 
-	if ( pinq.size() == 0 || punq.size() == 0 ) {
-	  return 0.0;
+	   if ( punq.size() == 0 ) {
+	      return 0.0;
+	   }
+	} else {
+	   // l == -1
+	   for (int i = 0; i < n; ++i ) {
+	      if ( (i != p) && (i != q) ) {
+		 pinq.push_back( i );
+	      }
+	   }
 	}
 
 	if (length) {
@@ -545,7 +567,45 @@ public:
 	    numerator = static_cast<double> ( pinq.size() );
 	 }
 
-	 return numerator / static_cast< double >( punq.size() );
+	if (rad_dom) {
+	   //only works if l == 2
+	   unsigned npaths_p = 0;
+	   unsigned npaths_q = 0;
+	   for (int i = 0; i < pinq.size(); ++i) {
+	      if ( pdist[i] == 1 ) {
+		 npaths_p += get_degree( pinq[ i ] ) - 1;
+	      }
+
+	      if ( qdist[i] == 1 ) {
+		 npaths_q += get_degree( pinq[ i ] ) - 1;
+	      }
+	   }
+
+	   double denominator;
+	   // if (npaths_p < npaths_q)
+	   //    denominator = static_cast<double>( npaths_p );
+	   // else
+	   //    denominator = static_cast<double>( npaths_q );
+	   denominator = static_cast<double>( npaths_p ) + static_cast<double>( npaths_q );
+
+	   if (denominator == 0.0) {
+	      //	      cout << "denom: " << denominator << endl;
+	      return 0.0;
+	   }
+
+	   numerator = static_cast<double> ( pinq.size() );
+
+	   //	   cout << "num: " << numerator << endl;
+	   //	   cout << "denom: " << denominator << endl;
+
+	   return numerator  / denominator;
+	      
+	} else {
+	   if (l == -1)
+	      return numerator / static_cast< double >( n - 2 );
+
+	   return numerator / static_cast< double >( punq.size() );
+	}
       }
       else {
 	 return 0.0;
@@ -669,6 +729,29 @@ public:
 	    return 0.0;
 	 }
 	 break;
+      case 6:
+	 get_all_neighbors( p, nei_p );
+	 get_all_neighbors( q, nei_q );
+
+	 vector_intersection( nei_p, nei_q, pinq );
+
+	 if (is_edge(p,q)) {
+	    if ( punq.size() == 2 ) {
+	       return 0.0;
+	    }
+
+	    int denom = nei_p.size();
+	    if (nei_q.size() < denom ) 
+	       denom = nei_q.size();
+	    if (denom == 0)
+	       return IGRAPH_INFINITY;
+
+	    return static_cast<double> ( pinq.size() ) / static_cast< double >( denom ) ;
+	 }
+	 else {
+	    return 0.0;
+	 }
+	 break;
       }
    }
   
@@ -723,17 +806,18 @@ public:
       }
    }
 
-   double compute_HCC( int order, bool b_length = false ) {
+   double compute_HCC( int order, bool b_length = false, bool rad_dom = false ) {
       int m = this->m();
       double res = 0.0;
       int p,q;
 
       graph G_copy( *this );
       for (int k = 0; k < m; ++k) {
-	cout << "\r" << k << "                "; 
+	 //	cout << "\r" << k << "                "; 
 	 igraph_edge( &G, k, &p, &q );
-	 //	 cout << "(" << p << "," << q << "): " << G_copy.compute_local_HCC(p,q, order);
-	 res += G_copy.compute_local_HCC(p,q, order, b_length);
+	 //	 cout << "(" << p << "," << q << "): " << G_copy.compute_local_HCC(p,q, order, b_length, rad_dom ) << endl;
+	 res += G_copy.compute_local_HCC(p,q, order, b_length, rad_dom);
+	 //	 cout << "k: " << k << ", res: " << res << endl;
       }
 
       if (m > 0)
@@ -793,6 +877,16 @@ public:
 	 for (int k = 0; k < m; ++k) {
 	    igraph_edge( &G, k, &p, &q );
 	    res += compute_local_ECC(p,q, 5);
+	 }
+
+	 if (m > 0)
+	    res = res / static_cast<double>( m );
+	 break;
+      case 6:
+	 //no partial triangles
+	 for (int k = 0; k < m; ++k) {
+	    igraph_edge( &G, k, &p, &q );
+	    res += compute_local_ECC(p,q, 6);
 	 }
 
 	 if (m > 0)

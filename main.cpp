@@ -39,9 +39,14 @@ int main(int argc, char** argv) {
   }
 
   //  cout << "HCC(0,1): " << G.compute_local_HCC(0,1,2) << endl;
+  cout << "ECC(5): " << G.compute_ECC( 5 ) << endl;
+  cout << "ECC(6): " << G.compute_ECC( 6 ) << endl;
   cout << "HCC(1): " << G.compute_HCC(1, true) << endl;
+  //  cout << "HCC(1, r): " << G.compute_HCC(1, true, true) << endl;
   cout << "HCC(2): " << G.compute_HCC(2, true) << endl;
+  cout << "HCC(2, all paths): " << G.compute_HCC(2, true, true) << endl;
   cout << "HCC(3): " << G.compute_HCC(3, true) << endl;
+  cout << "HCC(-1): " << G.compute_HCC(-1, true) << endl;
 
   return 0;
 }
